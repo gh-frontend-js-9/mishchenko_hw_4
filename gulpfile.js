@@ -6,6 +6,10 @@ const concat = require('gulp-concat');
 const autoprefixer = require('gulp-autoprefixer');
 //Оптисизация стилей
 const cleanCSS = require('gulp-clean-css');
+//Оптимизация скриптов
+const uglify = require('gulp-uglify');
+//Удаление файлов
+const del = require('del');
 //Синхронизация с браузером
 const browserSync = require('browser-sync').create();
 //Для препроцессоров стилей
@@ -16,6 +20,10 @@ const sass = require('gulp-sass');
 //Порядок подключения файлов со стилями
 const styleFiles = [
    './src/css/main.scss'
+]
+//Порядок подключения js файлов
+const scriptFiles = [
+   './src/js/slider.js'
 ]
 
 //Таск для обработки стилей
@@ -43,6 +51,27 @@ gulp.task('styles', () => {
       .pipe(browserSync.stream());
 });
 
+//Таск для обработки скриптов
+gulp.task('scripts', () => {
+   //Шаблон для поиска файлов JS
+   //Всей файлы по шаблону './src/js/**/*.js'
+   return gulp.src(scriptFiles)
+      //Объединение файлов в один
+      .pipe(concat('script.js'))
+      //Минификация JS
+      .pipe(uglify({
+         toplevel: false
+      }))
+      //Выходная папка для скриптов
+      .pipe(gulp.dest('./build/js'))
+      .pipe(browserSync.stream());
+});
+
+//Таск для очистки папки build
+gulp.task('del', () => {
+   return del(['build/*'])
+});
+
 //Таск для отслеживания изменений в файлах
 gulp.task('watch', () => {
    browserSync.init({
@@ -52,9 +81,11 @@ gulp.task('watch', () => {
    });
    //Следить за файлами со стилями с нужным расширением
    gulp.watch('./src/css/**/*.scss', gulp.series('styles'))
+   //Следить за JS файлами
+   gulp.watch('./src/js/**/*.js', gulp.series('scripts'))
    //При изменении HTML запустить синхронизацию
    gulp.watch("./*.html").on('change', browserSync.reload);
 });
 
 //Таск по умолчанию, Запускает styles, scripts и watch
-gulp.task('run', gulp.series(gulp.parallel('styles'), 'watch'));
+gulp.task('run', gulp.series(gulp.parallel('styles', 'scripts'), 'watch'));
